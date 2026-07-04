@@ -98,7 +98,7 @@
   <p class="subtitle">条件を一度入力するだけで、TIME SHARING・インスタベース・スペースマーケットの検索結果をまとめて開きます。</p>
 
   <div class="notice">
-    ※ いずれのサイトも外部開発者向けの公開APIは提供していません。このツールは各公式サイトの検索条件をURLとして組み立てて開く「検索ショートカット」です。予約は必ず各サイト上で行ってください。
+    ※ このツールは各公式サイトの検索条件をURLとして組み立てて開く「検索ショートカット」です。予約は必ず各サイト上で行ってください。
   </div>
 
   <div class="card">
@@ -466,6 +466,9 @@ function renderResults(){
   if (document.getElementById('siteTS').checked){
     sites.push({ name: 'TIME SHARING', url: buildTimeSharingUrl(c) });
   }
+  if (document.getElementById('siteSM').checked){
+    sites.push({ name: 'スペースマーケット', url: buildSpaceMarketUrl(c) });
+  }
   if (document.getElementById('siteIB').checked){
     const ibCaveats = [];
     if (c.capacity) ibCaveats.push(`人数（${c.capacity}人〜）`);
@@ -477,9 +480,6 @@ function renderResults(){
         ? `⚠️ ${ibCaveats.join('・')}はこのサイトの仕様上URLに反映できません。ページを開いた後、左側の「絞り込み」欄で指定してください。`
         : null
     });
-  }
-  if (document.getElementById('siteSM').checked){
-    sites.push({ name: 'スペースマーケット', url: buildSpaceMarketUrl(c) });
   }
 
   // 自動でタブを開くとブラウザのポップアップブロックで挙動が不安定になるため、
