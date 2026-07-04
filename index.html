@@ -143,12 +143,18 @@
         <label>開始時間</label>
         <select id="startTime"><option value="">指定しない</option></select>
       </div>
+    </div>
+    <div class="row" style="margin-top:12px;">
       <div>
-        <label>終了時間</label>
+        <label>利用時間（かんたん選択）</label>
+        <select id="duration"><option value="">指定しない</option></select>
+      </div>
+      <div>
+        <label>終了時間（手動指定も可）</label>
         <select id="endTime"><option value="">指定しない</option></select>
       </div>
     </div>
-    <p class="small-muted">開始・終了時間は両方指定した場合のみ反映されます。日付のみの指定も可能です。</p>
+    <p class="small-muted">開始時間を選んでから「利用時間」を選ぶと終了時間が自動入力されます。終了時間は後から手動でも変更できます。開始・終了時間は両方指定した場合のみ反映されます。日付のみの指定も可能です。</p>
   </div>
 
   <div class="card">
@@ -330,6 +336,40 @@ function fillTimeSelect(sel){
 }
 fillTimeSelect(document.getElementById('startTime'));
 fillTimeSelect(document.getElementById('endTime'));
+
+// 利用時間（かんたん選択）: 1時間刻みで12時間まで
+function fillDurationSelect(sel){
+  for (let h = 1; h <= 12; h++){
+    const opt = document.createElement('option');
+    opt.value = String(h);
+    opt.textContent = `${h}時間`;
+    sel.appendChild(opt);
+  }
+}
+fillDurationSelect(document.getElementById('duration'));
+
+// 開始時間 + 利用時間 から終了時間を自動計算（23:30を上限にクリップ）
+function computeEndTime(start, durationHours){
+  if (!start || !durationHours) return "";
+  const [h, m] = start.split(':').map(Number);
+  let totalMinutes = h * 60 + m + durationHours * 60;
+  const maxMinutes = 23 * 60 + 30;
+  if (totalMinutes > maxMinutes) totalMinutes = maxMinutes;
+  const eh = Math.floor(totalMinutes / 60);
+  const em = totalMinutes % 60;
+  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+}
+
+function updateEndTimeFromDuration(){
+  const start = document.getElementById('startTime').value;
+  const duration = document.getElementById('duration').value;
+  if (start && duration){
+    document.getElementById('endTime').value = computeEndTime(start, parseInt(duration, 10));
+  }
+}
+
+document.getElementById('duration').addEventListener('change', updateEndTimeFromDuration);
+document.getElementById('startTime').addEventListener('change', updateEndTimeFromDuration);
 
 // 入力値を「最低人数」として扱い、TIME SHARING側は近い人数帯に自動変換する
 function capacityBucketTS(n){
