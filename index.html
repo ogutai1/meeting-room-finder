@@ -240,6 +240,17 @@
     <p class="small-muted">TIME SHARING・スペースマーケット・ヨヤッピンに反映されます。それ以外のサイトはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
   </div>
 
+  <div class="card">
+    <h2>⑦ 並び替え</h2>
+    <div class="site-list">
+      <label class="site-item">
+        <input type="checkbox" id="sortPriceAsc">
+        <span class="site-name">料金が安い順に並べ替える</span>
+      </label>
+    </div>
+    <p class="small-muted">インスタベース・ヨヤッピン（旧SPACEE）・TKP貸会議室ネット・会議室セレクトに反映されます（駅指定検索ができる場合のみ）。それ以外のサイトはこの条件をURLで指定できないサイト仕様のため反映されません。ページを開いた後、各サイト上の並び替えメニューで指定してください。</p>
+  </div>
+
   <div class="actions">
     <button class="primary" id="searchBtn">選択したサイトをまとめて検索</button>
   </div>
@@ -500,8 +511,9 @@ function getConditions(){
   };
   const projector = document.getElementById('eqProjector').checked;
   const mic = document.getElementById('eqMic').checked;
+  const sortPriceAsc = document.getElementById('sortPriceAsc').checked;
   const stationObjs = [...selected].map(idx => stations[idx]);
-  return { dateVal, start, end, capacity, purpose, projector, mic, stationObjs };
+  return { dateVal, start, end, capacity, purpose, projector, mic, sortPriceAsc, stationObjs };
 }
 
 function buildTimeSharingUrl(c){
@@ -545,6 +557,7 @@ function buildInstabaseUrl(c){
     : `https://www.instabase.jp/kaigishitsu`;
   const params = new URLSearchParams();
   params.set('status', 'available');
+  if (c.sortPriceAsc) params.set('order_by', 'price_asc');
   if (c.dateVal){
     const [y,m,d] = c.dateVal.split('-').map(v => parseInt(v,10));
     params.set('from_date[year]', y);
@@ -635,6 +648,8 @@ function buildYoyappinUrl(c){
   if (c.projector) params.append('equipment_id[]', '9');
   if (c.mic) params.append('equipment_id[]', '12');
 
+  if (c.sortPriceAsc) params.set('order', 'price');
+
   const qs = params.toString();
   return qs ? `https://yoyappin.westjr.co.jp/search?${qs}` : `https://yoyappin.westjr.co.jp/search`;
 }
@@ -706,7 +721,8 @@ function buildTkpUrl(c){
   const stationHit = c.stationObjs.find(s => tkpAreaSlug[s[0]]);
   if (stationHit){
     const [region, slug] = tkpAreaSlug[stationHit[0]];
-    return `https://www.kashikaigishitsu.net/area/${region}/${slug}/`;
+    const base = `https://www.kashikaigishitsu.net/area/${region}/${slug}/`;
+    return c.sortPriceAsc ? `${base}?sort=price_asc` : base;
   }
   return `https://www.kashikaigishitsu.net/`;
 }
@@ -715,7 +731,8 @@ function buildTkpUrl(c){
 function buildKaigiSelectUrl(c){
   const stationHit = c.stationObjs.find(s => kaigiSelectCode[s[0]]);
   if (stationHit){
-    return `https://www.kaigi-select.com/search/room/s11302/${kaigiSelectCode[stationHit[0]]}/`;
+    const base = `https://www.kaigi-select.com/search/room/s11302/${kaigiSelectCode[stationHit[0]]}/`;
+    return c.sortPriceAsc ? `${base}?sort=2` : base;
   }
   return `https://www.kaigi-select.com/`;
 }
@@ -727,10 +744,18 @@ function renderResults(){
 
   const sites = [];
   if (document.getElementById('siteTS').checked){
-    sites.push({ name: 'TIME SHARING', url: buildTimeSharingUrl(c) });
+    sites.push({
+      name: 'TIME SHARING',
+      url: buildTimeSharingUrl(c),
+      caveat: c.sortPriceAsc ? '⚠️ 「料金が安い順」はこのサイトの仕様上URLに反映できません。ページを開いた後、サイト上の並び替えメニューで指定してください。' : null
+    });
   }
   if (document.getElementById('siteSM').checked){
-    sites.push({ name: 'スペースマーケット', url: buildSpaceMarketUrl(c) });
+    sites.push({
+      name: 'スペースマーケット',
+      url: buildSpaceMarketUrl(c),
+      caveat: c.sortPriceAsc ? '⚠️ 「料金が安い順」はこのサイトの仕様上URLに反映できません。ページを開いた後、サイト上の並び替えメニューで指定してください。' : null
+    });
   }
   if (document.getElementById('siteIB').checked){
     const ibCaveats = [];
@@ -751,6 +776,7 @@ function renderResults(){
     const url = buildSpaceBinUrl(c);
     const notes = ['駅の指定には対応していません（都道府県単位の検索です）。'];
     if (c.stationObjs.length > 1) notes.push('複数の都道府県を選択した場合、最初の1件のみ反映されます。');
+    if (c.sortPriceAsc) notes.push('「料金が安い順」もこのサイトの仕様上URLに反映できません。ページを開いた後、サイト上の並び替えメニューで指定してください。');
     sites.push({ name: 'スペース便', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
   if (document.getElementById('siteKC').checked){
@@ -758,16 +784,22 @@ function renderResults(){
     const fellBack = url === 'https://www.kaigishitu.com/';
     const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、左側の絞り込みで指定してください。'];
     if (fellBack && c.stationObjs.length) notes.push('選択した駅・都道府県はこのサイトの対応エリア外のため、トップページを表示します。');
+    if (c.sortPriceAsc) notes.push('「料金が安い順」もこのサイトの仕様上反映されません。');
     sites.push({ name: '会議室.COM', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
   if (document.getElementById('siteNK').checked){
-    sites.push({ name: '日本会議室', url: buildNipponKaigishitsuUrl(c) });
+    sites.push({
+      name: '日本会議室',
+      url: buildNipponKaigishitsuUrl(c),
+      caveat: c.sortPriceAsc ? '⚠️ このサイトには並び替え機能自体がないため、「料金が安い順」は反映できません。' : null
+    });
   }
   if (document.getElementById('siteTKP').checked){
     const url = buildTkpUrl(c);
     const fellBack = url === 'https://www.kashikaigishitsu.net/';
     const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、サイト上で指定してください。'];
     if (fellBack && c.stationObjs.length) notes.push('選択した駅はこのサイトの対応駅外のため、トップページを表示します。');
+    if (fellBack && c.sortPriceAsc) notes.push('「料金が安い順」もトップページでは指定できません（対応駅を選択すると反映されます）。');
     sites.push({ name: 'TKP貸会議室ネット', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
   if (document.getElementById('siteKS').checked){
@@ -775,6 +807,7 @@ function renderResults(){
     const fellBack = url === 'https://www.kaigi-select.com/';
     const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、サイト上で指定してください。'];
     if (fellBack && c.stationObjs.length) notes.push('対応駅は渋谷・新宿のみのため、トップページを表示します。');
+    if (fellBack && c.sortPriceAsc) notes.push('「料金が安い順」もトップページでは指定できません（渋谷・新宿を選択すると反映されます）。');
     sites.push({ name: '会議室セレクト', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
 
