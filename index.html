@@ -482,16 +482,9 @@ function renderResults(){
     sites.push({ name: 'スペースマーケット', url: buildSpaceMarketUrl(c) });
   }
 
-  // ポップアップブロックの警告バナー（必要時のみ表示）
-  const warning = document.createElement('div');
-  warning.className = 'notice';
-  warning.style.display = 'none';
-  warning.textContent = '一部のタブがブラウザにブロックされました。アドレスバー付近の「ポップアップがブロックされました」表示からこのサイトのポップアップを許可するか、下の「開く」ボタンを押してください。';
-  results.appendChild(warning);
-
-  let blockedCount = 0;
-
-  sites.forEach((site, i) => {
+  // 自動でタブを開くとブラウザのポップアップブロックで挙動が不安定になるため、
+  // ここではリンクを一覧表示するのみとし、実際に開くのはユーザーのクリック操作に委ねる。
+  sites.forEach((site) => {
     const row = document.createElement('div');
     row.className = 'result-row';
     row.innerHTML = `
@@ -510,17 +503,7 @@ function renderResults(){
       cav.textContent = site.caveat;
       results.appendChild(cav);
     }
-
-    // 同じクリックイベント内で同期的に開くことで、ブラウザのポップアップブロックを避けやすくする
-    const opened = window.open(site.url, `_meeting_room_finder_${i}`);
-    if (!opened){
-      blockedCount++;
-    }
   });
-
-  if (blockedCount > 0){
-    warning.style.display = 'block';
-  }
 }
 
 document.getElementById('searchBtn').addEventListener('click', renderResults);
