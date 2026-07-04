@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会議室オートサーチ（複数サイト横断）</title>
+<style>
+  :root{
+    --blue:#1a5fb4; --blue-dark:#123c73; --bg:#f4f6f9; --card:#ffffff;
+    --border:#dbe1e8; --text:#222; --muted:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg); color:var(--text); padding:24px;
+  }
+  .wrap{max-width:780px; margin:0 auto;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .subtitle{color:var(--muted); font-size:13px; margin:0 0 20px;}
+  .notice{
+    background:#fff7e6; border:1px solid #f0c36d; color:#7a5b00;
+    font-size:12.5px; padding:10px 14px; border-radius:8px; margin-bottom:20px; line-height:1.6;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,0.03);
+  }
+  .card h2{font-size:14px; margin:0 0 12px; color:var(--blue-dark);}
+  label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  input[type=text], select, input[type=date], input[type=number]{
+    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px;
+    font-size:14px; background:#fff; color:var(--text);
+  }
+  .row{display:flex; gap:12px;}
+  .row > div{flex:1;}
+  .station-search{margin-bottom:10px;}
+  .station-list{
+    max-height:280px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px;
+  }
+  .pref-group{margin-bottom:10px;}
+  .pref-group:last-child{margin-bottom:0;}
+  .pref-title{
+    font-size:11.5px; font-weight:700; color:var(--blue-dark); background:#eef3fb;
+    padding:4px 8px; border-radius:6px; margin-bottom:4px; position:sticky; top:0;
+  }
+  .pref-items{display:grid; grid-template-columns:1fr 1fr; gap:2px 12px;}
+  .station-list label{
+    display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text);
+    margin:0; padding:3px 4px; border-radius:4px; cursor:pointer;
+  }
+  .station-list label:hover{background:#f0f4fa;}
+  .station-list input{width:auto;}
+  .station-list .badge{font-size:10px; color:#9aa3af;}
+  .selected-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .chip{
+    background:#e7effc; color:var(--blue-dark); font-size:12px; padding:4px 10px;
+    border-radius:999px; display:flex; align-items:center; gap:6px;
+  }
+  .chip button{
+    border:none; background:none; color:var(--blue-dark); cursor:pointer; font-size:13px; line-height:1; padding:0;
+  }
+  .site-list{display:flex; flex-direction:column; gap:10px;}
+  .site-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border);
+    border-radius:10px; background:#fbfcfe;
+  }
+  .site-item input{width:auto;}
+  .site-item .site-name{font-weight:600; font-size:13.5px; flex:1;}
+  .site-item .site-note{font-size:11px; color:var(--muted);}
+  .actions{display:flex; gap:10px; margin-top:20px;}
+  button.primary{
+    flex:1; background:var(--blue); color:#fff; border:none; border-radius:10px;
+    padding:14px; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  button.primary:hover{background:var(--blue-dark);}
+  .results{margin-top:16px; display:flex; flex-direction:column; gap:10px;}
+  .result-row{
+    display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; background:#f7f8fa;
+  }
+  .result-row .rname{font-weight:600; font-size:13px; width:130px; flex-shrink:0;}
+  .result-row .rurl{font-size:11px; color:var(--muted); word-break:break-all; flex:1;}
+  .result-row button{
+    flex-shrink:0; background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:8px;
+    padding:8px 12px; font-size:12px; cursor:pointer;
+  }
+  .small-muted{font-size:11.5px; color:var(--muted); margin-top:6px;}
+  .caveat{
+    font-size:11.5px; color:#8a5a00; background:#fff7e6; border:1px solid #f0c36d;
+    border-radius:8px; padding:8px 12px; margin-top:-4px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>会議室オートサーチ</h1>
+  <p class="subtitle">条件を一度入力するだけで、TIME SHARING・インスタベース・スペースマーケットの検索結果をまとめて開きます。</p>
+
+  <div class="notice">
+    ※ いずれのサイトも外部開発者向けの公開APIは提供していません。このツールは各公式サイトの検索条件をURLとして組み立てて開く「検索ショートカット」です。予約は必ず各サイト上で行ってください。
+  </div>
+
+  <div class="card">
+    <h2>① 検索するサイト</h2>
+    <div class="site-list">
+      <label class="site-item">
+        <input type="checkbox" id="siteTS" checked>
+        <span class="site-name">TIME SHARING</span>
+        <span class="site-note">全国111駅に対応・詳細な人数/用途指定が可能</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteIB" checked>
+        <span class="site-name">インスタベース</span>
+        <span class="site-note">主要21駅で駅指定が可能（それ以外は全国の貸し会議室ページ）</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteSM" checked>
+        <span class="site-name">スペースマーケット</span>
+        <span class="site-note">主要21駅で駅指定が可能（それ以外は全国検索）</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② エリア・駅（都道府県別）</h2>
+    <div class="station-search">
+      <input type="text" id="stationFilter" placeholder="駅名で絞り込み（例：渋谷）">
+    </div>
+    <div class="station-list" id="stationList"></div>
+    <div class="selected-chips" id="chips"></div>
+    <p class="small-muted">「主要駅」バッジがある駅はインスタベース・スペースマーケットでも駅指定検索ができます。それ以外の駅はTIME SHARINGのみ駅指定が反映されます。</p>
+  </div>
+
+  <div class="card">
+    <h2>③ 日時（任意）</h2>
+    <div class="row">
+      <div>
+        <label>利用日</label>
+        <input type="date" id="dateInput">
+      </div>
+      <div>
+        <label>開始時間</label>
+        <select id="startTime"><option value="">指定しない</option></select>
+      </div>
+      <div>
+        <label>終了時間</label>
+        <select id="endTime"><option value="">指定しない</option></select>
+      </div>
+    </div>
+    <p class="small-muted">開始・終了時間は両方指定した場合のみ反映されます。日付のみの指定も可能です。</p>
+  </div>
+
+  <div class="card">
+    <h2>④ 人数（最低人数・任意）</h2>
+    <input type="number" id="capacityInput" min="1" placeholder="例：10（この人数以上を条件に検索）">
+    <p class="small-muted">入力した人数を「最低人数」として検索します。TIME SHARINGは最も近い人数帯（〜20人など）に自動変換、スペースマーケットは入力値をそのまま最低人数として使用します。インスタベースはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 利用目的</h2>
+    <div class="site-list">
+      <label class="site-item">
+        <input type="checkbox" id="purpBusiness" checked>
+        <span class="site-name">ビジネス全般</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="purpMeeting" checked>
+        <span class="site-name">会議</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="purpSeminar" checked>
+        <span class="site-name">セミナー</span>
+      </label>
+    </div>
+    <p class="small-muted">「ビジネス全般」を選ぶと会議・セミナーを含む幅広い検索になります（TIME SHARING・スペースマーケットに反映）。インスタベースは常に「貸し会議室」カテゴリで検索します。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 設備</h2>
+    <div class="site-list">
+      <label class="site-item">
+        <input type="checkbox" id="eqProjector" checked>
+        <span class="site-name">プロジェクター</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="eqMic" checked>
+        <span class="site-name">マイク</span>
+      </label>
+    </div>
+    <p class="small-muted">TIME SHARING・スペースマーケットに反映されます。インスタベースはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="searchBtn">選択したサイトをまとめて検索</button>
+  </div>
+
+  <div class="results" id="results"></div>
+</div>
+
+<script>
+// [name, timeSharingId(or null), majorPrefSlug(or null), majorStationCode(or null), prefName]
+const stations = [
+["渋谷駅",1,"tokyo","1130205","東京都"],["恵比寿駅",2,"tokyo","1130204","東京都"],["池尻大橋駅",4,null,null,"東京都"],["神泉駅",122,null,null,"東京都"],["代官山駅",174,null,null,"東京都"],
+["新宿駅",3,"tokyo","1130208","東京都"],["西新宿駅",5,null,null,"東京都"],["新宿御苑前駅",6,null,null,"東京都"],["新宿三丁目駅",7,null,null,"東京都"],["代々木駅",9,null,null,"東京都"],
+["西武新宿駅",111,null,null,"東京都"],["東新宿駅",112,null,null,"東京都"],["南新宿駅",178,null,null,"東京都"],["都庁前駅",177,null,null,"東京都"],
+["新橋駅",41,"tokyo","1130102","東京都"],["御成門駅",42,null,null,"東京都"],["虎ノ門駅",52,null,null,"東京都"],["内幸町駅",117,null,null,"東京都"],["汐留駅",142,null,null,"東京都"],
+["千駄ヶ谷駅",12,null,null,"東京都"],["四谷三丁目駅",13,null,null,"東京都"],["半蔵門駅",28,null,null,"東京都"],["四ツ谷駅",81,null,null,"東京都"],["国立競技場駅",121,null,null,"東京都"],["麹町駅",124,null,null,"東京都"],
+["表参道駅",16,null,null,"東京都"],["外苑前駅",17,null,null,"東京都"],["原宿駅",18,"tokyo","1130206","東京都"],["北参道駅",125,null,null,"東京都"],
+["秋葉原駅",19,"tokyo","1130222","東京都"],["神田駅",20,null,null,"東京都"],["御茶ノ水駅",22,null,null,"東京都"],["小川町駅",155,null,null,"東京都"],
+["品川駅",45,"tokyo","1130103","東京都"],["赤羽橋駅",47,null,null,"東京都"],["田町駅",48,"tokyo","1130228","東京都"],["三田駅",126,null,null,"東京都"],
+["東銀座駅",34,null,null,"東京都"],["有楽町駅",36,null,null,"東京都"],["銀座駅",38,null,null,"東京都"],["大手町駅",167,null,null,"東京都"],["銀座一丁目駅",119,null,null,"東京都"],["宝町駅",120,null,null,"東京都"],["京橋（東京）駅",154,null,null,"東京都"],
+["東京駅",40,"tokyo","1130101","東京都"],["日比谷駅",181,null,null,"東京都"],["日本橋（東京）駅",30,null,null,"東京都"],["水天宮前駅",31,null,null,"東京都"],["人形町駅",148,null,null,"東京都"],["茅場町駅",29,null,null,"東京都"],["新富町駅",35,null,null,"東京都"],["勝どき駅",37,null,null,"東京都"],["八丁堀駅",91,null,null,"東京都"],
+["台場駅",185,null,null,"東京都"],["東京テレポート駅",186,null,null,"東京都"],
+["赤坂見附駅",49,null,null,"東京都"],["赤坂駅",50,null,null,"東京都"],["六本木駅",51,null,null,"東京都"],["永田町駅",123,null,null,"東京都"],["麻布十番駅",179,null,null,"東京都"],
+["五反田駅",44,"tokyo","1130202","東京都"],["目黒駅",101,null,null,"東京都"],["高輪ゲートウェイ駅",113,null,null,"東京都"],
+["飯田橋駅",21,"tokyo","1131205","東京都"],["水道橋駅",24,null,null,"東京都"],["神楽坂駅",160,null,null,"東京都"],["牛込神楽坂駅",159,null,null,"東京都"],["後楽園駅",172,null,null,"東京都"],["春日駅",173,null,null,"東京都"],["本郷三丁目駅",171,null,null,"東京都"],
+["神保町駅",26,null,null,"東京都"],["九段下駅",27,null,null,"東京都"],["竹橋駅",39,null,null,"東京都"],
+["浅草駅",90,null,null,"東京都"],["北千住駅",105,null,null,"東京都"],["京成関屋駅",144,null,null,"東京都"],["牛田駅",145,null,null,"東京都"],
+["池袋駅",55,"tokyo","1130212","東京都"],["錦糸町駅",92,null,null,"東京都"],
+["蒲田駅",53,null,null,"東京都"],["京急蒲田駅",118,null,null,"東京都"],
+["上野駅",null,"tokyo","1130220","東京都"],
+["横浜駅",76,null,null,"神奈川県"],["新横浜駅",78,null,null,"神奈川県"],["綱島駅",88,null,null,"神奈川県"],["川崎駅",93,null,null,"神奈川県"],["新綱島駅",152,null,null,"神奈川県"],["京急川崎駅",153,null,null,"神奈川県"],["鎌倉駅",79,null,null,"神奈川県"],
+["大宮駅",73,"saitama","1131906","埼玉県"],
+["津田沼駅",104,null,null,"千葉県"],
+["名古屋駅",65,null,null,"愛知県"],["今池駅",66,null,null,"愛知県"],["近鉄名古屋駅",180,null,null,"愛知県"],["栄駅",null,"aichi","9951310","愛知県"],
+["淀屋橋駅",70,null,null,"大阪府"],["心斎橋駅",107,"osaka","9961809","大阪府"],["京橋（大阪）駅",106,null,null,"大阪府"],["堺筋本町駅",71,null,null,"大阪府"],["福島駅",72,null,null,"大阪府"],["東梅田駅",69,null,null,"大阪府"],["長堀駅",138,null,null,"大阪府"],["北浜駅",146,null,null,"大阪府"],["北新地駅",168,null,null,"大阪府"],
+["梅田駅",166,"osaka","3400101","大阪府"],["大阪城北詰駅",184,null,null,"大阪府"],["西大路御池駅",108,null,null,"大阪府"],["新大阪駅",null,"osaka","1160213","大阪府"],["難波駅",null,"osaka","3200101","大阪府"],["天王寺駅",null,"osaka","1160719","大阪府"],
+["神戸駅",109,null,null,"兵庫県"],["ハーバーランド駅",136,null,null,"兵庫県"],["高速神戸駅",137,null,null,"兵庫県"],
+["仙台駅",67,null,null,"宮城県"],["長町南駅",143,null,null,"宮城県"],["長町駅",183,null,null,"宮城県"],
+["博多駅",null,"fukuoka","1190101","福岡県"]
+];
+
+const selected = new Set(); // by index into stations array
+
+function renderStationList(filter=""){
+  const list = document.getElementById('stationList');
+  list.innerHTML = "";
+  const f = filter.trim();
+
+  // 都道府県ごとにグループ化（出現順を維持）
+  const groups = [];
+  const groupIndex = new Map();
+  stations.forEach(([name, ts, pref, code, prefName], idx) => {
+    if (f && !name.includes(f)) return;
+    if (!groupIndex.has(prefName)){
+      groupIndex.set(prefName, groups.length);
+      groups.push({ prefName, items: [] });
+    }
+    groups[groupIndex.get(prefName)].items.push(idx);
+  });
+
+  groups.forEach(group => {
+    if (group.items.length === 0) return;
+    const groupEl = document.createElement('div');
+    groupEl.className = 'pref-group';
+
+    const title = document.createElement('div');
+    title.className = 'pref-title';
+    title.textContent = group.prefName;
+    groupEl.appendChild(title);
+
+    const itemsEl = document.createElement('div');
+    itemsEl.className = 'pref-items';
+
+    group.items.forEach(idx => {
+      const [name, ts, pref, code] = stations[idx];
+      const wrap = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = selected.has(idx);
+      cb.addEventListener('change', () => {
+        if (cb.checked) selected.add(idx); else selected.delete(idx);
+        renderChips();
+      });
+      wrap.appendChild(cb);
+      wrap.appendChild(document.createTextNode(name));
+      if (code){
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = ' 主要駅';
+        wrap.appendChild(badge);
+      }
+      itemsEl.appendChild(wrap);
+    });
+
+    groupEl.appendChild(itemsEl);
+    list.appendChild(groupEl);
+  });
+}
+
+function renderChips(){
+  const chips = document.getElementById('chips');
+  chips.innerHTML = "";
+  [...selected].forEach(idx => {
+    const st = stations[idx];
+    if (!st) return;
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `<span>${st[0]}</span>`;
+    const btn = document.createElement('button');
+    btn.textContent = '×';
+    btn.addEventListener('click', () => {
+      selected.delete(idx);
+      renderChips();
+      renderStationList(document.getElementById('stationFilter').value);
+    });
+    chip.appendChild(btn);
+    chips.appendChild(chip);
+  });
+}
+
+document.getElementById('stationFilter').addEventListener('input', (e) => {
+  renderStationList(e.target.value);
+});
+
+// time options 00:00 - 23:30, 30min step
+function fillTimeSelect(sel){
+  for (let h = 0; h < 24; h++){
+    for (let m of [0,30]){
+      const hh = String(h).padStart(2,'0');
+      const mm = String(m).padStart(2,'0');
+      const val = `${hh}:${mm}`;
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      sel.appendChild(opt);
+    }
+  }
+}
+fillTimeSelect(document.getElementById('startTime'));
+fillTimeSelect(document.getElementById('endTime'));
+
+// 入力値を「最低人数」として扱い、TIME SHARING側は近い人数帯に自動変換する
+function capacityBucketTS(n){
+  if (!n) return "";
+  if (n <= 5) return "1-5";
+  if (n <= 20) return "6-20";
+  if (n <= 40) return "21-40";
+  if (n <= 60) return "41-60";
+  if (n <= 100) return "61-100";
+  return "101-";
+}
+
+function getConditions(){
+  const dateVal = document.getElementById('dateInput').value; // yyyy-mm-dd
+  const start = document.getElementById('startTime').value;
+  const end = document.getElementById('endTime').value;
+  const capacity = parseInt(document.getElementById('capacityInput').value, 10) || null;
+  const purpose = {
+    business: document.getElementById('purpBusiness').checked,
+    meeting: document.getElementById('purpMeeting').checked,
+    seminar: document.getElementById('purpSeminar').checked
+  };
+  const projector = document.getElementById('eqProjector').checked;
+  const mic = document.getElementById('eqMic').checked;
+  const stationObjs = [...selected].map(idx => stations[idx]);
+  return { dateVal, start, end, capacity, purpose, projector, mic, stationObjs };
+}
+
+function buildTimeSharingUrl(c){
+  const params = new URLSearchParams();
+  const ids = c.stationObjs.filter(s => s[1] !== null).map(s => s[1]);
+  if (ids.length) params.set('ar', ids.join(','));
+
+  if (c.dateVal){
+    const [y,m,d] = c.dateVal.split('-').map(v => parseInt(v,10));
+    let dt = `${y}/${m}/${d}`;
+    if (c.start && c.end) dt += ` ${c.start}～${c.end}`;
+    params.set('dt', dt);
+  }
+  // 入力人数を最低人数とみなし、最も近い人数帯に変換
+  const bucket = capacityBucketTS(c.capacity);
+  if (bucket) params.set('pp', bucket);
+
+  // 利用目的：「ビジネス全般」は会議・セミナーを包含する上位カテゴリなのでそちらを優先
+  if (c.purpose.business){
+    params.set('ctg', '4');
+  } else {
+    const ctgParts = [];
+    if (c.purpose.meeting) ctgParts.push('58');
+    if (c.purpose.seminar) ctgParts.push('61');
+    if (ctgParts.length) params.set('ctg', ctgParts.join(','));
+  }
+
+  // 設備: プロジェクター=4, ハンドマイク=7
+  const op = [];
+  if (c.projector) op.push('4');
+  if (c.mic) op.push('7');
+  if (op.length) params.set('op', op.join(','));
+
+  return params.toString() ? `https://time-sharing.jp/search?${params.toString()}` : `https://time-sharing.jp/search`;
+}
+
+function buildInstabaseUrl(c){
+  const major = c.stationObjs.find(s => s[2] && s[3]);
+  const base = major
+    ? `https://www.instabase.jp/${major[2]}-s${major[3]}-kaigishitsu`
+    : `https://www.instabase.jp/kaigishitsu`;
+  const params = new URLSearchParams();
+  params.set('status', 'available');
+  if (c.dateVal){
+    const [y,m,d] = c.dateVal.split('-').map(v => parseInt(v,10));
+    params.set('from_date[year]', y);
+    params.set('from_date[month]', m);
+    params.set('from_date[day]', d);
+    params.set('to_date[year]', y);
+    params.set('to_date[month]', m);
+    params.set('to_date[day]', d);
+    if (c.start && c.end){
+      params.set('from_time', c.start);
+      params.set('to_time', c.end);
+      params.set('planType', 'hourly');
+    }
+  }
+  return `${base}?${params.toString()}`;
+}
+
+function buildSpaceMarketUrl(c){
+  const major = c.stationObjs.find(s => s[2] && s[3]);
+  const params = new URLSearchParams();
+  if (major){
+    params.set('areaIds', major[3]);
+    params.set('areaType', 'station');
+    params.set('location', major[0]);
+  }
+  if (c.dateVal){
+    params.set('startedAt', c.dateVal); // already yyyy-mm-dd
+    if (c.start && c.end){
+      params.set('startedTime', c.start);
+      params.set('endedTime', c.end);
+      params.set('priceType', 'HOURLY');
+    }
+  }
+  // 最低人数としてそのまま反映
+  if (c.capacity) params.set('minCapacity', c.capacity);
+
+  if (c.purpose.business){
+    params.set('eventType', 'biz');
+  } else {
+    const middleParts = [];
+    if (c.purpose.meeting) middleParts.push('1301'); // 会議・打ち合わせ
+    if (c.purpose.seminar) middleParts.push('1304'); // セミナー・研修
+    if (middleParts.length){
+      params.set('eventType', 'biz');
+      params.set('eventTypeMiddle', middleParts.join(','));
+    }
+  }
+
+  // equipment: projector, microphone_wired
+  const amenities = [];
+  if (c.projector) amenities.push('projector');
+  if (c.mic) amenities.push('microphone_wired');
+  if (amenities.length) params.set('amenities', amenities.join(','));
+
+  const qs = params.toString();
+  return qs ? `https://www.spacemarket.com/search/?${qs}` : `https://www.spacemarket.com/search/`;
+}
+
+function renderResults(){
+  const c = getConditions();
+  const results = document.getElementById('results');
+  results.innerHTML = "";
+
+  const sites = [];
+  if (document.getElementById('siteTS').checked){
+    sites.push({ name: 'TIME SHARING', url: buildTimeSharingUrl(c) });
+  }
+  if (document.getElementById('siteIB').checked){
+    const ibCaveats = [];
+    if (c.capacity) ibCaveats.push(`人数（${c.capacity}人〜）`);
+    if (c.projector || c.mic) ibCaveats.push('設備（プロジェクター/マイク）');
+    sites.push({
+      name: 'インスタベース',
+      url: buildInstabaseUrl(c),
+      caveat: ibCaveats.length
+        ? `⚠️ ${ibCaveats.join('・')}はこのサイトの仕様上URLに反映できません。ページを開いた後、左側の「絞り込み」欄で指定してください。`
+        : null
+    });
+  }
+  if (document.getElementById('siteSM').checked){
+    sites.push({ name: 'スペースマーケット', url: buildSpaceMarketUrl(c) });
+  }
+
+  // ポップアップブロックの警告バナー（必要時のみ表示）
+  const warning = document.createElement('div');
+  warning.className = 'notice';
+  warning.style.display = 'none';
+  warning.textContent = '一部のタブがブラウザにブロックされました。アドレスバー付近の「ポップアップがブロックされました」表示からこのサイトのポップアップを許可するか、下の「開く」ボタンを押してください。';
+  results.appendChild(warning);
+
+  let blockedCount = 0;
+
+  sites.forEach((site, i) => {
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    row.innerHTML = `
+      <div class="rname">${site.name}</div>
+      <div class="rurl">${site.url}</div>
+    `;
+    const btn = document.createElement('button');
+    btn.textContent = '開く';
+    btn.addEventListener('click', () => window.open(site.url, '_blank'));
+    row.appendChild(btn);
+    results.appendChild(row);
+
+    if (site.caveat){
+      const cav = document.createElement('div');
+      cav.className = 'caveat';
+      cav.textContent = site.caveat;
+      results.appendChild(cav);
+    }
+
+    // 同じクリックイベント内で同期的に開くことで、ブラウザのポップアップブロックを避けやすくする
+    const opened = window.open(site.url, `_meeting_room_finder_${i}`);
+    if (!opened){
+      blockedCount++;
+    }
+  });
+
+  if (blockedCount > 0){
+    warning.style.display = 'block';
+  }
+}
+
+document.getElementById('searchBtn').addEventListener('click', renderResults);
+
+renderStationList();
+</script>
+</body>
+</html>
