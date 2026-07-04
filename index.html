@@ -90,6 +90,19 @@
     font-size:11.5px; color:#8a5a00; background:#fff7e6; border:1px solid #f0c36d;
     border-radius:8px; padding:8px 12px; margin-top:-4px;
   }
+
+  @media (max-width: 480px){
+    body{ padding:14px; }
+    .row{ flex-direction:column; gap:12px; }
+    .site-item{ flex-wrap:wrap; row-gap:4px; }
+    .site-item .site-name{ flex:1 1 auto; min-width:120px; }
+    .site-item .site-note{ flex:1 1 100%; width:100%; margin-top:2px; }
+    .pref-items{ grid-template-columns:1fr; }
+    .result-row{ flex-wrap:wrap; }
+    .result-row .rname{ width:100%; }
+    .result-row .rurl{ width:100%; }
+    .result-row button{ margin-left:auto; }
+  }
 </style>
 </head>
 <body>
@@ -190,7 +203,7 @@
   <div class="card">
     <h2>④ 人数（最低人数・任意）</h2>
     <input type="number" id="capacityInput" min="1" placeholder="例：10（この人数以上を条件に検索）">
-    <p class="small-muted">入力した人数を「最低人数」として検索します。TIME SHARING・ヨヤッピンは最も近い人数帯に自動変換、スペースマーケット・スペース便・日本会議室は入力値をそのまま最低人数として使用します。インスタベース・会議室.COM・TKP貸会議室ネット・会議室セレクトはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
+    <p class="small-muted">入力した人数を「最低人数」として検索します。TIME SHARING・ヨヤッピンは人数帯（レンジ）でしか絞り込めないサイト仕様のため、指定人数を下回る会場が含まれないよう必要に応じて一つ上の人数帯に切り上げます（表示される会場が指定人数よりやや大きくなる場合があります）。スペースマーケット・スペース便・日本会議室は入力値をそのまま最低人数として使用します。インスタベース・会議室.COM・TKP貸会議室ネット・会議室セレクトはこの条件をURLで指定できないサイト仕様のため反映されません。なお、各サイトの検索結果に広告・PR枠の会場が含まれる場合、これらは絞り込み条件を無視して表示されることがあり、本ツールでは制御できません。</p>
   </div>
 
   <div class="card">
@@ -452,23 +465,25 @@ function updateEndTimeFromDuration(){
 document.getElementById('duration').addEventListener('change', updateEndTimeFromDuration);
 document.getElementById('startTime').addEventListener('change', updateEndTimeFromDuration);
 
-// 入力値を「最低人数」として扱い、TIME SHARING側は近い人数帯に自動変換する
+// 入力値を「最低人数」として扱う。TIME SHARINGは人数帯（レンジ）でしか絞り込めないサイト仕様のため、
+// 指定人数を下回る会場が結果に含まれないよう、帯の下限が指定人数以上になる帯まで切り上げて選択する。
+// （例: 50人と入力 → 41〜60人帯には41〜49人の会場も含まれ得るため、61〜100人帯まで切り上げる）
 function capacityBucketTS(n){
   if (!n) return "";
-  if (n <= 5) return "1-5";
-  if (n <= 20) return "6-20";
-  if (n <= 40) return "21-40";
-  if (n <= 60) return "41-60";
-  if (n <= 100) return "61-100";
+  const bands = [[1,"1-5"],[6,"6-20"],[21,"21-40"],[41,"41-60"],[61,"61-100"],[101,"101-"]];
+  for (const [lo, val] of bands){
+    if (n <= lo) return val;
+  }
   return "101-";
 }
 
-// ヨヤッピン用の人数帯（capacity_range=min,max）
+// ヨヤッピン用の人数帯（capacity_range=min,max）。TIME SHARINGと同様、指定人数を下回らないよう
+// 帯の下限が指定人数以上になる帯まで切り上げて選択する。
 function capacityRangeYoyappin(n){
   if (!n) return "";
   const buckets = [[1,1],[2,4],[5,10],[11,20],[21,30],[31,40],[41,50],[51,70],[71,100],[101,200],[201,300],[301,400],[401,500],[501,700],[701,1000]];
   for (const [lo,hi] of buckets){
-    if (n <= hi) return `${lo},${hi}`;
+    if (n <= lo) return `${lo},${hi}`;
   }
   return "1001,1001";
 }
