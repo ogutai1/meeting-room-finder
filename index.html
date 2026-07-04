@@ -79,7 +79,7 @@
     display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:10px;
     padding:10px 12px; background:#f7f8fa;
   }
-  .result-row .rname{font-weight:600; font-size:13px; width:130px; flex-shrink:0;}
+  .result-row .rname{font-weight:600; font-size:13px; width:150px; flex-shrink:0;}
   .result-row .rurl{font-size:11px; color:var(--muted); word-break:break-all; flex:1;}
   .result-row button{
     flex-shrink:0; background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:8px;
@@ -95,7 +95,7 @@
 <body>
 <div class="wrap">
   <h1>会議室オートサーチ</h1>
-  <p class="subtitle">条件を一度入力するだけで、TIME SHARING・インスタベース・スペースマーケットの検索結果をまとめて開きます。</p>
+  <p class="subtitle">条件を一度入力するだけで、複数の会議室・レンタルスペース検索サイトの検索結果をまとめて開きます。</p>
 
   <div class="notice">
     ※ このツールは各公式サイトの検索条件をURLとして組み立てて開く「検索ショートカット」です。予約は必ず各サイト上で行ってください。
@@ -119,6 +119,36 @@
         <span class="site-name">インスタベース</span>
         <span class="site-note">主要21駅で駅指定が可能（それ以外は全国の貸し会議室ページ）</span>
       </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteYP" checked>
+        <span class="site-name">ヨヤッピン（旧SPACEE）</span>
+        <span class="site-note">主要21駅で駅指定が可能。人数・設備・用途も反映</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteSB" checked>
+        <span class="site-name">スペース便</span>
+        <span class="site-note">都道府県単位で検索（駅の指定は非対応）</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteKC" checked>
+        <span class="site-name">会議室.COM</span>
+        <span class="site-note">全国5,000会場超。一部の主要駅のみ駅指定対応</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteNK" checked>
+        <span class="site-name">日本会議室</span>
+        <span class="site-note">自社運営チェーン。東京の主要駅は駅指定対応</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteTKP" checked>
+        <span class="site-name">TKP貸会議室ネット</span>
+        <span class="site-note">国内最大級のチェーン。一部の主要駅のみ駅指定対応</span>
+      </label>
+      <label class="site-item">
+        <input type="checkbox" id="siteKS" checked>
+        <span class="site-name">会議室セレクト</span>
+        <span class="site-note">全国3,494会場。渋谷・新宿のみ駅指定対応</span>
+      </label>
     </div>
   </div>
 
@@ -129,7 +159,7 @@
     </div>
     <div class="station-list" id="stationList"></div>
     <div class="selected-chips" id="chips"></div>
-    <p class="small-muted">「主要駅」バッジがある駅はインスタベース・スペースマーケットでも駅指定検索ができます。それ以外の駅はTIME SHARINGのみ駅指定が反映されます。</p>
+    <p class="small-muted">「主要駅」バッジがある駅はインスタベース・スペースマーケット・ヨヤッピンでも駅指定検索ができます。会議室.COM・TKP貸会議室ネット・会議室セレクトは一部の主要駅のみ、日本会議室は東京の主要駅のみ対応です。それ以外の駅はTIME SHARINGのみ駅指定が反映されます。</p>
   </div>
 
   <div class="card">
@@ -160,7 +190,7 @@
   <div class="card">
     <h2>④ 人数（最低人数・任意）</h2>
     <input type="number" id="capacityInput" min="1" placeholder="例：10（この人数以上を条件に検索）">
-    <p class="small-muted">入力した人数を「最低人数」として検索します。TIME SHARINGは最も近い人数帯（〜20人など）に自動変換、スペースマーケットは入力値をそのまま最低人数として使用します。インスタベースはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
+    <p class="small-muted">入力した人数を「最低人数」として検索します。TIME SHARING・ヨヤッピンは最も近い人数帯に自動変換、スペースマーケット・スペース便・日本会議室は入力値をそのまま最低人数として使用します。インスタベース・会議室.COM・TKP貸会議室ネット・会議室セレクトはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
   </div>
 
   <div class="card">
@@ -179,7 +209,7 @@
         <span class="site-name">セミナー</span>
       </label>
     </div>
-    <p class="small-muted">「ビジネス全般」を選ぶと会議・セミナーを含む幅広い検索になります（TIME SHARING・スペースマーケットに反映）。インスタベースは常に「貸し会議室」カテゴリで検索します。</p>
+    <p class="small-muted">「ビジネス全般」を選ぶと会議・セミナーを含む幅広い検索になります（TIME SHARING・スペースマーケット・ヨヤッピンに反映）。それ以外のサイトは常に会議室・レンタルスペースの標準カテゴリで検索します。</p>
   </div>
 
   <div class="card">
@@ -194,7 +224,7 @@
         <span class="site-name">マイク</span>
       </label>
     </div>
-    <p class="small-muted">TIME SHARING・スペースマーケットに反映されます。インスタベースはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
+    <p class="small-muted">TIME SHARING・スペースマーケット・ヨヤッピンに反映されます。それ以外のサイトはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
   </div>
 
   <div class="actions">
@@ -236,6 +266,57 @@ const stations = [
 ["仙台駅",67,null,null,"宮城県"],["長町南駅",143,null,null,"宮城県"],["長町駅",183,null,null,"宮城県"],
 ["博多駅",null,"fukuoka","1190101","福岡県"]
 ];
+
+// --- 追加6サイト用の対応表（実機で確認できた駅・都道府県のみ収録） ---
+
+// スペース便・会議室.COM の都道府県スラッグ（確認済みの命名規則）
+const prefSlugMap = {
+  "東京都": "tokyo", "神奈川県": "kanagawa", "千葉県": "chiba", "埼玉県": "saitama",
+  "愛知県": "aichi", "大阪府": "osaka", "兵庫県": "hyogo", "宮城県": "miyagi", "福岡県": "fukuoka"
+};
+
+// 会議室.COM: 駅名 → [都道府県スラッグ, 駅スラッグ]（実機確認済みのみ）
+const kaigishituStationSlug = {
+  "渋谷駅": ["tokyo", "shibuya"],
+  "新宿駅": ["tokyo", "shinjyuku"],
+  "横浜駅": ["kanagawa", "yokohama"],
+  "梅田駅": ["osaka", "umeda"],
+  "名古屋駅": ["aichi", "nagoya"],
+  "博多駅": ["fukuoka", "hakata"]
+};
+
+// 日本会議室: 都道府県 → large_area_id（実機確認済み）
+const nipponLargeAreaId = {
+  "東京都": 3, "神奈川県": 18, "千葉県": 20, "埼玉県": 19,
+  "愛知県": 2, "大阪府": 5, "兵庫県": 6, "宮城県": 23, "福岡県": 7
+};
+// 日本会議室: 駅名 → middle_area_id（東京都内の主要駅のみ実機確認済み）
+const nipponMiddleAreaId = {
+  "渋谷駅": 56, "新宿駅": 90, "東京駅": 94, "品川駅": 92, "池袋駅": 95,
+  "秋葉原駅": 61, "六本木駅": 91, "原宿駅": 93, "新橋駅": 62,
+  "日本橋（東京）駅": 58, "上野駅": 107, "銀座駅": 106
+};
+
+// TKP貸会議室ネット: 駅名 → [エリアスラッグ, 駅スラッグ]（実機確認済みのみ）
+const tkpAreaSlug = {
+  "渋谷駅": ["tokyoto", "shibuya"],
+  "新宿駅": ["tokyoto", "shinjuku"],
+  "東京駅": ["tokyoto", "tokyo"],
+  "品川駅": ["tokyoto", "shinagawa"],
+  "池袋駅": ["tokyoto", "ikebukuro"],
+  "秋葉原駅": ["tokyoto", "akihabara"],
+  "新橋駅": ["tokyoto", "shimbashi"],
+  "横浜駅": ["kanto", "yokohama"],
+  "梅田駅": ["osakafu", "umeda"],
+  "名古屋駅": ["tokai", "nagoya"],
+  "博多駅": ["kyushu", "hakata"]
+};
+
+// 会議室セレクト: 駅名 → 駅コード（東京の一部主要駅のみ実機確認済み。他都市は番号体系が異なるため未収録）
+const kaigiSelectCode = {
+  "渋谷駅": "1130205",
+  "新宿駅": "1130208"
+};
 
 const selected = new Set(); // by index into stations array
 
@@ -382,6 +463,16 @@ function capacityBucketTS(n){
   return "101-";
 }
 
+// ヨヤッピン用の人数帯（capacity_range=min,max）
+function capacityRangeYoyappin(n){
+  if (!n) return "";
+  const buckets = [[1,1],[2,4],[5,10],[11,20],[21,30],[31,40],[41,50],[51,70],[71,100],[101,200],[201,300],[301,400],[401,500],[501,700],[701,1000]];
+  for (const [lo,hi] of buckets){
+    if (n <= hi) return `${lo},${hi}`;
+  }
+  return "1001,1001";
+}
+
 function getConditions(){
   const dateVal = document.getElementById('dateInput').value; // yyyy-mm-dd
   const start = document.getElementById('startTime').value;
@@ -497,6 +588,123 @@ function buildSpaceMarketUrl(c){
   return qs ? `https://www.spacemarket.com/search/?${qs}` : `https://www.spacemarket.com/search/`;
 }
 
+// ヨヤッピン（旧SPACEE／+PLACE、JR西日本運営）
+function buildYoyappinUrl(c){
+  const params = new URLSearchParams();
+  const major = c.stationObjs.find(s => s[2] && s[3]);
+  if (major) params.set('location_id', major[3]);
+
+  if (c.dateVal) params.set('date', c.dateVal);
+  if (c.start) params.set('time', c.start);
+  if (c.start && c.end){
+    const [sh, sm] = c.start.split(':').map(Number);
+    const [eh, em] = c.end.split(':').map(Number);
+    const diffH = Math.round(((eh * 60 + em) - (sh * 60 + sm)) / 60);
+    if (diffH > 0) params.set('hours', diffH);
+  }
+
+  // 会場タイプ: 1=貸し会議室, 7=セミナールーム
+  const keywordsSet = new Set();
+  if (c.purpose.business){
+    keywordsSet.add('1'); keywordsSet.add('7');
+  } else {
+    if (c.purpose.meeting) keywordsSet.add('1');
+    if (c.purpose.seminar) keywordsSet.add('7');
+  }
+  [...keywordsSet].forEach(k => params.append('listing_keyword[]', k));
+
+  const range = capacityRangeYoyappin(c.capacity);
+  if (range) params.set('capacity_range', range);
+
+  // 設備: プロジェクター=9, マイク=12
+  if (c.projector) params.append('equipment_id[]', '9');
+  if (c.mic) params.append('equipment_id[]', '12');
+
+  const qs = params.toString();
+  return qs ? `https://yoyappin.westjr.co.jp/search?${qs}` : `https://yoyappin.westjr.co.jp/search`;
+}
+
+// スペース便（都道府県単位のみ対応）
+function buildSpaceBinUrl(c){
+  const params = new URLSearchParams();
+  const prefName = c.stationObjs.length ? c.stationObjs[0][4] : null;
+  const slug = prefName ? prefSlugMap[prefName] : null;
+  if (slug) params.set('state', slug);
+  if (c.dateVal) params.set('arrive', c.dateVal);
+  if (c.start) params.set('start', c.start);
+  if (c.end) params.set('end', c.end);
+  if (c.capacity) params.set('guest', c.capacity);
+
+  const qs = params.toString();
+  return qs ? `https://kaigishitsu.com/search-results/?${qs}` : `https://kaigishitsu.com/`;
+}
+
+// 会議室.COM（主要駅のみ駅指定、それ以外は都道府県ページ）
+function buildKaigishitsuComUrl(c){
+  const stationHit = c.stationObjs.find(s => kaigishituStationSlug[s[0]]);
+  if (stationHit){
+    const [pref, slug] = kaigishituStationSlug[stationHit[0]];
+    return `https://www.kaigishitu.com/area/${pref}/${slug}/`;
+  }
+  const prefName = c.stationObjs.length ? c.stationObjs[0][4] : null;
+  const prefSlug = prefName ? prefSlugMap[prefName] : null;
+  if (prefSlug) return `https://www.kaigishitu.com/area/${prefSlug}/`;
+  return `https://www.kaigishitu.com/`;
+}
+
+// 日本会議室
+function buildNipponKaigishitsuUrl(c){
+  const params = new URLSearchParams();
+  params.set('mode', 'search');
+
+  if (c.dateVal){
+    const [y, m, d] = c.dateVal.split('-').map(v => parseInt(v, 10));
+    params.set('reservation_year', y);
+    params.set('reservation_month', m);
+    params.set('reservation_day', d);
+  }
+  if (c.start){
+    const [h, m] = c.start.split(':');
+    params.set('reservation_start_hour', parseInt(h, 10));
+    params.set('reservation_start_minute', m);
+  }
+  if (c.end){
+    const [h, m] = c.end.split(':');
+    params.set('reservation_end_hour', parseInt(h, 10));
+    params.set('reservation_end_minute', m);
+  }
+  if (c.capacity) params.set('person_count', c.capacity);
+
+  const prefName = c.stationObjs.length ? c.stationObjs[0][4] : null;
+  const largeId = prefName ? nipponLargeAreaId[prefName] : null;
+  if (largeId) params.set('large_area_id', largeId);
+
+  const stationHit = c.stationObjs.find(s => nipponMiddleAreaId[s[0]]);
+  if (stationHit) params.set('middle_area_id', nipponMiddleAreaId[stationHit[0]]);
+
+  const qs = params.toString();
+  return qs ? `https://www.nipponkaigishitsu.com/search/?${qs}` : `https://www.nipponkaigishitsu.com/`;
+}
+
+// TKP貸会議室ネット（主要駅のみ駅指定、それ以外はトップページ）
+function buildTkpUrl(c){
+  const stationHit = c.stationObjs.find(s => tkpAreaSlug[s[0]]);
+  if (stationHit){
+    const [region, slug] = tkpAreaSlug[stationHit[0]];
+    return `https://www.kashikaigishitsu.net/area/${region}/${slug}/`;
+  }
+  return `https://www.kashikaigishitsu.net/`;
+}
+
+// 会議室セレクト（渋谷・新宿のみ駅指定、それ以外はトップページ）
+function buildKaigiSelectUrl(c){
+  const stationHit = c.stationObjs.find(s => kaigiSelectCode[s[0]]);
+  if (stationHit){
+    return `https://www.kaigi-select.com/search/room/s11302/${kaigiSelectCode[stationHit[0]]}/`;
+  }
+  return `https://www.kaigi-select.com/`;
+}
+
 function renderResults(){
   const c = getConditions();
   const results = document.getElementById('results');
@@ -520,6 +728,39 @@ function renderResults(){
         ? `⚠️ ${ibCaveats.join('・')}はこのサイトの仕様上URLに反映できません。ページを開いた後、左側の「絞り込み」欄で指定してください。`
         : null
     });
+  }
+  if (document.getElementById('siteYP').checked){
+    sites.push({ name: 'ヨヤッピン（旧SPACEE）', url: buildYoyappinUrl(c) });
+  }
+  if (document.getElementById('siteSB').checked){
+    const url = buildSpaceBinUrl(c);
+    const notes = ['駅の指定には対応していません（都道府県単位の検索です）。'];
+    if (c.stationObjs.length > 1) notes.push('複数の都道府県を選択した場合、最初の1件のみ反映されます。');
+    sites.push({ name: 'スペース便', url, caveat: `⚠️ ${notes.join(' ')}` });
+  }
+  if (document.getElementById('siteKC').checked){
+    const url = buildKaigishitsuComUrl(c);
+    const fellBack = url === 'https://www.kaigishitu.com/';
+    const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、左側の絞り込みで指定してください。'];
+    if (fellBack && c.stationObjs.length) notes.push('選択した駅・都道府県はこのサイトの対応エリア外のため、トップページを表示します。');
+    sites.push({ name: '会議室.COM', url, caveat: `⚠️ ${notes.join(' ')}` });
+  }
+  if (document.getElementById('siteNK').checked){
+    sites.push({ name: '日本会議室', url: buildNipponKaigishitsuUrl(c) });
+  }
+  if (document.getElementById('siteTKP').checked){
+    const url = buildTkpUrl(c);
+    const fellBack = url === 'https://www.kashikaigishitsu.net/';
+    const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、サイト上で指定してください。'];
+    if (fellBack && c.stationObjs.length) notes.push('選択した駅はこのサイトの対応駅外のため、トップページを表示します。');
+    sites.push({ name: 'TKP貸会議室ネット', url, caveat: `⚠️ ${notes.join(' ')}` });
+  }
+  if (document.getElementById('siteKS').checked){
+    const url = buildKaigiSelectUrl(c);
+    const fellBack = url === 'https://www.kaigi-select.com/';
+    const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、サイト上で指定してください。'];
+    if (fellBack && c.stationObjs.length) notes.push('対応駅は渋谷・新宿のみのため、トップページを表示します。');
+    sites.push({ name: '会議室セレクト', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
 
   // 自動でタブを開くとブラウザのポップアップブロックで挙動が不安定になるため、
