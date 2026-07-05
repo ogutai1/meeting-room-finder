@@ -255,17 +255,6 @@
     <p class="small-muted">TIME SHARING・スペースマーケット・ヨヤッピンに反映されます。それ以外のサイトはこの条件をURLで指定できないサイト仕様のため反映されません。</p>
   </div>
 
-  <div class="card">
-    <h2>⑧ 並び替え</h2>
-    <div class="site-list">
-      <label class="site-item">
-        <input type="checkbox" id="sortPriceAsc" checked>
-        <span class="site-name">料金が安い順に並べ替える</span>
-      </label>
-    </div>
-    <p class="small-muted">インスタベース・ヨヤッピン（旧SPACEE）・TKP貸会議室ネット・会議室セレクトに反映されます（駅指定検索ができる場合のみ）。それ以外のサイトはこの条件をURLで指定できないサイト仕様のため反映されません。ページを開いた後、各サイト上の並び替えメニューで指定してください。</p>
-  </div>
-
   <div class="actions">
     <button class="primary" id="searchBtn">選択したサイトをまとめて検索</button>
   </div>
@@ -528,9 +517,8 @@ function getConditions(){
   const mic = document.getElementById('eqMic').checked;
   const priceMin = parseInt(document.getElementById('priceMinInput').value, 10) || null;
   const priceMax = parseInt(document.getElementById('priceMaxInput').value, 10) || null;
-  const sortPriceAsc = document.getElementById('sortPriceAsc').checked;
   const stationObjs = [...selected].map(idx => stations[idx]);
-  return { dateVal, start, end, capacity, purpose, projector, mic, priceMin, priceMax, sortPriceAsc, stationObjs };
+  return { dateVal, start, end, capacity, purpose, projector, mic, priceMin, priceMax, stationObjs };
 }
 
 // TKP貸会議室ネット・会議室セレクトは料金の絞り込みが決まった価格帯（プリセット）でしか
@@ -586,7 +574,6 @@ function buildInstabaseUrl(c){
     : `https://www.instabase.jp/kaigishitsu`;
   const params = new URLSearchParams();
   params.set('status', 'available');
-  if (c.sortPriceAsc) params.set('order_by', 'price_asc');
   if (c.priceMin) params.set('minPrice', c.priceMin);
   if (c.priceMax) params.set('maxPrice', c.priceMax);
   if (c.dateVal){
@@ -683,8 +670,6 @@ function buildYoyappinUrl(c){
   if (c.projector) params.append('equipment_id[]', '9');
   if (c.mic) params.append('equipment_id[]', '12');
 
-  if (c.sortPriceAsc) params.set('order', 'price');
-
   // 料金の下限・上限をそのまま反映
   if (c.priceMin) params.set('price_min', c.priceMin);
   if (c.priceMax) params.set('price_max', c.priceMax);
@@ -762,7 +747,6 @@ function buildTkpUrl(c){
     const [region, slug] = tkpAreaSlug[stationHit[0]];
     const base = `https://www.kashikaigishitsu.net/area/${region}/${slug}/`;
     const params = new URLSearchParams();
-    if (c.sortPriceAsc) params.set('sort', 'price_asc');
     // 料金は決まった価格帯でしか絞り込めないサイト仕様のため、指定額を含む一つ上の価格帯に切り上げる
     const feeMax = tierCeil(c.priceMax, TKP_FEE_TIERS);
     if (feeMax) params.set('sch_fee_max', feeMax);
@@ -791,7 +775,7 @@ function buildKaigiSelectUrl(c){
     } else {
       base = `https://www.kaigi-select.com/search/room/s11302/${code}/`;
     }
-    return c.sortPriceAsc ? `${base}?sort=2` : base;
+    return base;
   }
   return `https://www.kaigi-select.com/`;
 }
@@ -804,8 +788,7 @@ function renderResults(){
   const sites = [];
   if (document.getElementById('siteTS').checked){
     const tsNotes = [];
-    if (c.sortPriceAsc) tsNotes.push('「料金が安い順」はこのサイトの仕様上URLに反映できません。ページを開いた後、サイト上の並び替えメニューで指定してください。');
-    if (c.priceMin || c.priceMax) tsNotes.push('料金の下限・上限もこのサイトの仕様上URLに反映できません。');
+    if (c.priceMin || c.priceMax) tsNotes.push('料金の下限・上限はこのサイトの仕様上URLに反映できません。');
     sites.push({
       name: 'TIME SHARING',
       url: buildTimeSharingUrl(c),
@@ -815,8 +798,7 @@ function renderResults(){
   if (document.getElementById('siteSM').checked){
     sites.push({
       name: 'スペースマーケット',
-      url: buildSpaceMarketUrl(c),
-      caveat: c.sortPriceAsc ? '⚠️ 「料金が安い順」はこのサイトの仕様上URLに反映できません。ページを開いた後、サイト上の並び替えメニューで指定してください。' : null
+      url: buildSpaceMarketUrl(c)
     });
   }
   if (document.getElementById('siteIB').checked){
@@ -838,7 +820,6 @@ function renderResults(){
     const url = buildSpaceBinUrl(c);
     const notes = ['駅の指定には対応していません（都道府県単位の検索です）。'];
     if (c.stationObjs.length > 1) notes.push('複数の都道府県を選択した場合、最初の1件のみ反映されます。');
-    if (c.sortPriceAsc) notes.push('「料金が安い順」もこのサイトの仕様上URLに反映できません。ページを開いた後、サイト上の並び替えメニューで指定してください。');
     if (c.priceMin || c.priceMax) notes.push('料金の下限・上限もこのサイトの仕様上URLに反映できません。');
     sites.push({ name: 'スペース便', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
@@ -847,14 +828,12 @@ function renderResults(){
     const fellBack = url === 'https://www.kaigishitu.com/';
     const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、左側の絞り込みで指定してください。'];
     if (fellBack && c.stationObjs.length) notes.push('選択した駅・都道府県はこのサイトの対応エリア外のため、トップページを表示します。');
-    if (c.sortPriceAsc) notes.push('「料金が安い順」もこのサイトの仕様上反映されません。');
     if (c.priceMin || c.priceMax) notes.push('料金の下限・上限もこのサイトの仕様上反映されません。');
     sites.push({ name: '会議室.COM', url, caveat: `⚠️ ${notes.join(' ')}` });
   }
   if (document.getElementById('siteNK').checked){
     const nkNotes = [];
-    if (c.sortPriceAsc) nkNotes.push('このサイトには並び替え機能自体がないため、「料金が安い順」は反映できません。');
-    if (c.priceMin || c.priceMax) nkNotes.push('料金の下限・上限もこのサイトには絞り込み機能自体がないため反映できません。');
+    if (c.priceMin || c.priceMax) nkNotes.push('料金の下限・上限はこのサイトには絞り込み機能自体がないため反映できません。');
     sites.push({
       name: '日本会議室',
       url: buildNipponKaigishitsuUrl(c),
@@ -866,10 +845,9 @@ function renderResults(){
     const fellBack = url === 'https://www.kashikaigishitsu.net/';
     const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、サイト上で指定してください。'];
     if (fellBack && c.stationObjs.length) notes.push('選択した駅はこのサイトの対応駅外のため、トップページを表示します。');
-    if (fellBack && c.sortPriceAsc) notes.push('「料金が安い順」もトップページでは指定できません（対応駅を選択すると反映されます）。');
     if (c.priceMin || c.priceMax){
       if (fellBack){
-        notes.push('料金の下限・上限もトップページでは指定できません（対応駅を選択すると反映されます）。');
+        notes.push('料金の下限・上限はトップページでは指定できません（対応駅を選択すると反映されます）。');
       } else {
         const feeMax = tierCeil(c.priceMax, TKP_FEE_TIERS);
         const feeMin = tierCeil(c.priceMin, TKP_FEE_TIERS.map(t => t + 1));
@@ -883,10 +861,9 @@ function renderResults(){
     const fellBack = url === 'https://www.kaigi-select.com/';
     const notes = ['日時・人数・設備の条件はこのサイトのURLに反映されません。ページを開いた後、サイト上で指定してください。'];
     if (fellBack && c.stationObjs.length) notes.push('対応駅は渋谷・新宿のみのため、トップページを表示します。');
-    if (fellBack && c.sortPriceAsc) notes.push('「料金が安い順」もトップページでは指定できません（渋谷・新宿を選択すると反映されます）。');
     if (c.priceMin || c.priceMax){
       if (fellBack){
-        notes.push('料金の下限・上限もトップページでは指定できません（渋谷・新宿を選択すると反映されます）。');
+        notes.push('料金の下限・上限はトップページでは指定できません（渋谷・新宿を選択すると反映されます）。');
       } else {
         const feeMax = tierCeil(c.priceMax, KS_FEE_TIERS);
         const feeMin = tierCeil(c.priceMin, KS_FEE_TIERS.map(t => t + 1));
